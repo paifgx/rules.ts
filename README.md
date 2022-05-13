@@ -1,15 +1,20 @@
 # rules.ts
 
 [//]: # ([![Build Status]&#40;https://travis-ci.org/bluealba/rules-js.svg?branch=master&#41;]&#40;https://travis-ci.org/bluealba/rules-js&#41;)
+
 [//]: # ([![npm]&#40;https://img.shields.io/npm/v/rules-js.svg&#41;]&#40;https://npmjs.org/package/rules-js&#41;)
+
 [//]: # ([![npm]&#40;https://img.shields.io/npm/dt/rules-js.svg&#41;]&#40;https://npmjs.org/package/rules-js&#41;)
+
 [//]: # (![David]&#40;https://img.shields.io/david/bluealba/rules-js.svg&#41;)
+
 [//]: # ([![Coverage Status]&#40;https://coveralls.io/repos/github/bluealba/rules-js/badge.svg?branch=master&#41;]&#40;https://coveralls.io/github/bluealba/rules-js?branch=master&#41;)
 
 ## Overview
 
 This is an implementation of a very lightweight pure javascript rule engine.
-It's very loosely inspired on drools, but keeping an extra effort in keeping complexity to the bare minimum.
+It's very loosely inspired on drools, but keeping an extra effort in keeping complexity to the bare
+minimum.
 
 - [rules.ts](#rulests)
   * [Overview](#overview)
@@ -31,43 +36,60 @@ It's very loosely inspired on drools, but keeping an extra effort in keeping com
 npm install rules-ts
 ```
 
-
 ### Usage Example
-This very naive example on how to create an small rule engine to process online orders. This isn't meant to imitate a full business process, neither to shown the full potential of rules.ts
+
+This very naive example on how to create an small rule engine to process online orders. This isn't
+meant to imitate a full business process, neither to shown the full potential of rules.ts
 
 We start by defining a rules file in JSON.
 
 ```json
 {
-	"name": "process-orders",
-	"rules": [
-		 {
-			 "when": "always",
-			 "then": "calculateTotalPrice"
-		 },
-		 {
-			 "when": { "closure": "checkStockLocation", "location": "localDeposit" },
-			 "then": [
-				 { "closure": "calculateTaxes", "salesTax": 0.08 },
-				 "createDispatchOrder"
-			 ]
-		 },
-		 {
-			 "when": { "closure": "checkStockLocation", "location": "foreignDeposit" },
-			 "then": [
-				 "calculateShipping",
-				 "createDispatchOrder"
-			 ]
-		 },
-		 {
-			 "when": { "closure": "checkStockLocation", "location": "none" },
-			 "then": { "closure": "error", "message": "There is availability of such product"}
-		 }
-	]
+  "name": "process-orders",
+  "rules": [
+    {
+      "when": "always",
+      "then": "calculateTotalPrice"
+    },
+    {
+      "when": {
+        "closure": "checkStockLocation",
+        "location": "localDeposit"
+      },
+      "then": [
+        {
+          "closure": "calculateTaxes",
+          "salesTax": 0.08
+        },
+        "createDispatchOrder"
+      ]
+    },
+    {
+      "when": {
+        "closure": "checkStockLocation",
+        "location": "foreignDeposit"
+      },
+      "then": [
+        "calculateShipping",
+        "createDispatchOrder"
+      ]
+    },
+    {
+      "when": {
+        "closure": "checkStockLocation",
+        "location": "none"
+      },
+      "then": {
+        "closure": "error",
+        "message": "There is availability of such product"
+      }
+    }
+  ]
 }
 ```
 
-Now we can evaluate any order using such rules file. First we create the engine.  We can do it inside a js module:
+Now we can evaluate any order using such rules file. First we create the engine. We can do it inside
+a js module:
 
 ```javascript
 const engine = new Engine();
@@ -79,28 +101,28 @@ const engine = new Engine();
 const definitions = require("./process-orders.rules.json");
 engine.add(definitions);
 
-module.exports = function (order) {
-	return engine.process("process-orders", order);
+module.exports = function(order) {
+  return engine.process("process-orders", order);
 }
 ```
 
-Then we just use that module to evaluate orders.  Each order is a **fact** that
+Then we just use that module to evaluate orders. Each order is a **fact** that
 will be provided to our rule engine.
 
 ```javascript
 const orderProcessorEngine = require("./order-processor-engine");
 
 const order = {
-	books: [
-		{ name: "Good Omens", icbn: "0060853980", price: 12.25 }
-	],
-	client: "mr-goodbuyer"
+  books: [
+    { name: "Good Omens", icbn: "0060853980", price: 12.25 }
+  ],
+  client: "mr-goodbuyer"
 };
 
 //result is a Promise since rules might evaluate asynchronically.
 orderProcessorEngine(order).then(result => {
-	const resultingDispatchOrder = result.fact;
-	// handle the result in any way
+  const resultingDispatchOrder = result.fact;
+  // handle the result in any way
 })
 ```
 
@@ -110,18 +132,17 @@ Those reference to provided closures and are the place were implementor should p
 their own business code.
 
 This is where we drift slightly away from the drools-like frameworks take on defining
-how a rule engine should actually be configured.  We believe that's a good idea
+how a rule engine should actually be configured. We believe that's a good idea
 to define separately the implementation of the business actions that can be executed
 and the logic that tells us when and how they are triggered.
 
 There are two ways to do define the missing verbs, through functions or objects. Both
 of them are rather similar:
 
-
 ```javascript
 engine.closures.add("calculateTotalPrice", (fact, context) => {
-	fact.totalPrice = fact.books.reduce((total, book) => total + book.price, 0);
-	return fact;
+  fact.totalPrice = fact.books.reduce((total, book) => total + book.price, 0);
+  return fact;
 });
 ```
 
@@ -129,21 +150,25 @@ or
 
 ```javascript
 class CalculateTotalPrize extends Closure {
-	process(fact, context) {
-		fact.totalPrice = fact.books.reduce((total, book) => total + book.price, 0);
-		return fact;
-	} 
+  process(fact, context) {
+    fact.totalPrice = fact.books.reduce((total, book) => total + book.price, 0);
+    return fact;
+  }
 }
 
 engine.closures.add("calculateTotalPrice", new CalculateTotalPrize());
 ```
 
 ## Engine
-This is the main entry point for rules.ts.  The typically lifecycle of a rule engine implies three steps:
 
-1. Instantiate the rule engine.  This instance will be kept alive during the whole life of the application.
+This is the main entry point for rules.ts. The typically lifecycle of a rule engine implies three
+steps:
+
+1. Instantiate the rule engine. This instance will be kept alive during the whole life of the
+   application.
 2. Configure the engine provided closures.
-3. Configure the engine with high-level closures (rules, ruleflows). This is usually done by requiring a rule-flow definition file
+3. Configure the engine with high-level closures (rules, ruleflows). This is usually done by
+   requiring a rule-flow definition file
 4. Evaluate multiple facts using the engine and obtain a result for each one of them.
 
 ```javascript
@@ -153,31 +178,45 @@ const Engine = require("rules-js");
 const engine = new Engine();
 
 // 2. configure
-engine.closures.add("calculateTotalPrice", (fact, context)) => {
-	fact.totalPrice = fact.books.reduce((total, book) => total + book.price, 0);
-	return fact;
-});
+engine.closures.add("calculateTotalPrice", (fact, context))
+=>
+{
+  fact.totalPrice = fact.books.reduce((total, book) => total + book.price, 0);
+  return fact;
+}
+)
+;
 
-engine.closures.add("calculateTaxes", (fact, context)) => {
-	fact.taxes = fact.totalPrice * context.parameters.salesTax;
-	return fact;
-}, { required: ["salesTax"] });
+engine.closures.add("calculateTaxes", (fact, context))
+=>
+{
+  fact.taxes = fact.totalPrice * context.parameters.salesTax;
+  return fact;
+}
+,
+{
+  required: ["salesTax"]
+}
+)
+;
 
 const definitions = require("./process-orders.rules.json");
 engine.closures.create(definitions);
 
 // 3. at some time later, evaluate facts using the engine
-module.exports = function (fact) {
-	return engine.process("process-orders", fact);
+module.exports = function(fact) {
+  return engine.process("process-orders", fact);
 }
 
 ```
 
 ## Fact
+
 A fact is an object that is feeded to the rule engine in order to produce a
 computational result. Any object can be a fact.
 
 ## Closures
+
 One of the core concepts of rules.ts are closures. We defined **closure** as any
 computation bound to a certain context that can act over a **fact** and return a
 value.
@@ -192,20 +231,20 @@ the library.
 
 ```javascript
 // a simple closure implementation function
-function (fact, context) {
-	return fact.totalPrice * context.parameters.salesTax;
+function(fact, context) {
+  return fact.totalPrice * context.parameters.salesTax;
 }
 
 //the same thing implemented through a class
 class TaxCalculator extends Closure {
-	process(fact, context) {
-		return fact.totalPrice * context.parameters.salesTax;
-	}
+  process(fact, context) {
+    return fact.totalPrice * context.parameters.salesTax;
+  }
 }
 ```
 
-
 Note that any closure will receive two parameters:
+
 ```
 @param      {Object}  fact - the fact is the object that is current being evaluated by the closure.
 @param      {Context} context - the fact's execution context
@@ -214,6 +253,7 @@ Note that any closure will receive two parameters:
 
 @return     {Object}  the result of the computation (this can be a Promise too!)
 ```
+
 The main parameter is of course the **fact**, closures need to derive their result
 from each different fact that is provided. **context.parameters** hash is introduced
 to allow the reuse of closure implementations through parameterization.
@@ -222,9 +262,9 @@ Closures will often enhance the current provided fact by adding extra informatio
 to it. Of course, a closure can always alter the fact.
 
 ```javascript
-function (fact, context) {
-	fact.taxes = fact.totalPrice * 0.8;
-	return fact;
+function(fact, context) {
+  fact.taxes = fact.totalPrice * 0.8;
+  return fact;
 }
 ```
 
@@ -235,8 +275,8 @@ We can register provided closures into a rule engine by invoking the following:
 
 ```javascript
 engine.closures.add("calculateTaxes", (fact, context) => {
-	fact.taxes = fact.totalPrice * 0.08
-	return fact;
+  fact.taxes = fact.totalPrice * 0.08
+  return fact;
 });
 ```
 
@@ -247,7 +287,9 @@ We can later reference to any provided closure (actually, any *named* closure)
 in the JSON rule file through a json object like the following:
 
 ```json
-{ "closure": "calculateTaxes" }
+{
+  "closure": "calculateTaxes"
+}
 ```
 
 #### Parameterizable closures
@@ -258,8 +300,8 @@ to receive the tax percentage.
 
 ```javascript
 engine.closures.add("calculateTaxes", (fact, context) => {
-	fact.taxes = fact.totalPrice * context.parameters.salesTax;
-	return fact;
+  fact.taxes = fact.totalPrice * context.parameters.salesTax;
+  return fact;
 }, { required: ["salesTax"] });
 ```
 
@@ -268,23 +310,33 @@ a value for the `salesTax` parameter (otherwise we will get an error while parsi
 it!).
 
 ```json
-{ "closure": "calculateTaxes", "salesTax": 0.08 }
+{
+  "closure": "calculateTaxes",
+  "salesTax": 0.08
+}
 ```
 
 #### Parameterless closures (syntax sugar)
+
 When using closures that don't receive any parameters we can, instead of writing
 the whole closure object `{ "closure": calculateShipping" }` we can simply
 reference it by its name: `"calculateShipping"`.
 
 ### Rules
+
 Rules an special kind of closures that are composed by two component closures (of
 any kind!). One of the closures will act as a condition (the *when*), conditionating
 the execution of the second closure (the *then*) to the result of its evaluation.
 
 ```json
 {
-	"when": { "closure": "hasStockLocally" },
-	"then": { "closure": "calculateTaxes", "salesTax": 0.08 }
+  "when": {
+    "closure": "hasStockLocally"
+  },
+  "then": {
+    "closure": "calculateTaxes",
+    "salesTax": 0.08
+  }
 }
 ```
 
@@ -292,21 +344,32 @@ the execution of the second closure (the *then*) to the result of its evaluation
 
 ```json
 {
-	"when": "hasStockLocally",
-	"then": { "closure": "calculateTaxes", "salesTax": 0.08 }
+  "when": "hasStockLocally",
+  "then": {
+    "closure": "calculateTaxes",
+    "salesTax": 0.08
+  }
 }
 ```
 
 ### Closure arrays (reduce)
-Closures can also be expressed as an array of closures.  When evaluating an
+
+Closures can also be expressed as an array of closures. When evaluating an
 array of closures Rule.JS will perform a reduction, meaning that the resulting
 object of each closure will become the fact of the next one.
 
 ```json
 [
-	{ "closure": "calculateTaxes", "salesTax": 0.08 },
-	{ "closure": "makeCreditCardCharge" },
-	{ "closure": "createDispatchOrder" }
+  {
+    "closure": "calculateTaxes",
+    "salesTax": 0.08
+  },
+  {
+    "closure": "makeCreditCardCharge"
+  },
+  {
+    "closure": "createDispatchOrder"
+  }
 ]
 ```
 
@@ -314,9 +377,12 @@ You can also mix syntaxes inside the array
 
 ```json
 [
-	{ "closure": "calculateTaxes", "salesTax": 0.08 },
-	"makeCreditCardCharge",
-	"createDispatchOrder"
+  {
+    "closure": "calculateTaxes",
+    "salesTax": 0.08
+  },
+  "makeCreditCardCharge",
+  "createDispatchOrder"
 ]
 ```
 
@@ -325,12 +391,15 @@ rules, nested arrays of closures)
 
 ```json
 [
-	{
-		"when": "isTaxAccountable",
-		"then": { "closure": "calculateTaxes", "salesTax": 0.08 }
-	},
-	"makeCreditCardCharge",
-	"createDispatchOrder"
+  {
+    "when": "isTaxAccountable",
+    "then": {
+      "closure": "calculateTaxes",
+      "salesTax": 0.08
+    }
+  },
+  "makeCreditCardCharge",
+  "createDispatchOrder"
 ]
 ```
 
@@ -340,8 +409,11 @@ You can also use closure arrays as conditions. By default they will work with "a
 
 ```json
 {
-	"when": ["isFoo", "isBar"],
-	"then": "executeOrder66"
+  "when": [
+    "isFoo",
+    "isBar"
+  ],
+  "then": "executeOrder66"
 },
 ```
 
@@ -349,9 +421,12 @@ You can also define an "and" or "or" strategies to apply them.
 
 ```json
 {
-	"when": ["isFoo", "isBar"],
-	"conditionStrategy": "or",
-	"then": "executeOrder66"
+  "when": [
+    "isFoo",
+    "isBar"
+  ],
+  "conditionStrategy": "or",
+  "then": "executeOrder66"
 },
 ```
 
@@ -359,43 +434,62 @@ There is also a "last" strategy, which makes it work like a regular reducer clos
 
 ```json
 {
-	"when": ["transformForFoo", "isFoo"],
-	"conditionStrategy": "last",
-	"then": "executeOrder66"
+  "when": [
+    "transformForFoo",
+    "isFoo"
+  ],
+  "conditionStrategy": "last",
+  "then": "executeOrder66"
 },
 ```
 
 ### Rules flow
+
 A rule flow is a definition of a chain of rules that will be evaluated (and applied)
 in order. Typically this is the higher order construction that is registered into rules js.
 
 ```json
 {
-	"name": "process-orders",
-	"rules": [
-		 {
-			 "when": "always",
-			 "then": "calculateTotalPrice"
-		 },
-		 {
-			 "when": { "closure": "checkStockLocation", "location": "localDeposit" },
-			 "then": [
-				 { "closure": "calculateTaxes", "salesTax": 0.08 },
-				 "createDispatchOrder"
-			 ]
-		 },
-		 {
-			 "when": { "closure": "checkStockLocation", "location": "foreignDeposit" },
-			 "then": [
-				 "calculateShipping",
-				 "createDispatchOrder"
-			 ]
-		 },
-		 {
-			 "when": { "closure": "checkStockLocation", "location": "none" },
-			 "then": { "closure": "error", "message": "There is availability of such product"}
-		 }
-	]
+  "name": "process-orders",
+  "rules": [
+    {
+      "when": "always",
+      "then": "calculateTotalPrice"
+    },
+    {
+      "when": {
+        "closure": "checkStockLocation",
+        "location": "localDeposit"
+      },
+      "then": [
+        {
+          "closure": "calculateTaxes",
+          "salesTax": 0.08
+        },
+        "createDispatchOrder"
+      ]
+    },
+    {
+      "when": {
+        "closure": "checkStockLocation",
+        "location": "foreignDeposit"
+      },
+      "then": [
+        "calculateShipping",
+        "createDispatchOrder"
+      ]
+    },
+    {
+      "when": {
+        "closure": "checkStockLocation",
+        "location": "none"
+      },
+      "then": {
+        "closure": "error",
+        "message": "There is availability of such product"
+      }
+    }
+  ]
 }
 ```
 
